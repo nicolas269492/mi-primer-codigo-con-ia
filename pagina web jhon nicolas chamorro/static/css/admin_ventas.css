@@ -1,0 +1,14 @@
+/* Estilos propios del módulo admin: ventas y formulario de pedidos */
+.ventas-layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 1.25rem; align-items: start; }
+@media (max-width: 900px) { .ventas-layout { grid-template-columns: 1fr; } }
+
+.atajos { display: flex; flex-wrap: wrap; gap: .35rem; }
+
+.top-productos { margin: 0; padding-left: 1.2rem; display: grid; gap: .75rem; }
+.barra-top { height: 6px; background: var(--fondo); border-radius: 999px; overflow: hidden; margin: .2rem 0; }
+.barra-top span { display: block; height: 100%; background: var(--primario); border-radius: 999px; }
+
+.lineas-pedido select { width: 100%; min-width: 200px; }
+.lineas-pedido .inp-cantidad { width: 6rem; text-align: right; }
+.lineas-pedido .excedido { color: var(--peligro); font-weight: 600; }
+#agregar-linea { margin-top: .6rem; }

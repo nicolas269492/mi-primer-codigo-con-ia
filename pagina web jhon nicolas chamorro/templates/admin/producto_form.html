@@ -1,0 +1,71 @@
+{#
+  Formulario para crear o editar un producto. Rutas: admin_inv.producto_nuevo y admin_inv.producto_editar.
+  Si 'producto' es None se está creando (aparece el campo de stock inicial).
+  enctype=multipart/form-data es necesario para poder subir la imagen.
+#}
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar producto' if producto else 'Nuevo producto' }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_inventario.css') }}">{% endblock %}
+{% block contenido %}
+<div class="fila entre">
+  <h1>{{ 'Editar producto' if producto else 'Nuevo producto' }}</h1>
+  <a class="btn btn-sec btn-sm" href="{{ url_for('admin_inv.productos') }}">← Volver</a>
+</div>
+
+<form class="tarjeta formulario" method="post" enctype="multipart/form-data"
+      action="{{ url_for('admin_inv.producto_editar', producto_id=producto.id) if producto else url_for('admin_inv.producto_nuevo') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <div class="form-cols">
+    <label>Código *
+      <input name="codigo" required maxlength="40" value="{{ form.get('codigo', '') }}" placeholder="P-008">
+    </label>
+    <label>Nombre *
+      <input name="nombre" required maxlength="150" value="{{ form.get('nombre', '') }}">
+    </label>
+    <label>Categoría
+      <input name="categoria" maxlength="80" list="lista-categorias" value="{{ form.get('categoria', '') }}" placeholder="General">
+      <datalist id="lista-categorias">{% for c in categorias %}<option value="{{ c }}">{% endfor %}</datalist>
+    </label>
+  </div>
+
+  <label>Descripción
+    <textarea name="descripcion" rows="3">{{ form.get('descripcion', '') or '' }}</textarea>
+  </label>
+
+  <div class="form-cols">
+    <label>Precio de venta *
+      <input name="precio" type="number" min="0" step="0.01" required value="{{ form.get('precio', '') }}">
+    </label>
+    <label>Stock mínimo
+      <input name="stock_minimo" type="number" min="0" step="1" value="{{ form.get('stock_minimo', 0) }}">
+    </label>
+    {% if producto %}
+    <label>Stock actual
+      <input value="{{ producto.stock }} (reservado {{ producto.reservado }}, disponible {{ producto.disponible }})" disabled>
+      <small class="nota">El stock solo cambia con <a href="{{ url_for('admin_inv.movimientos', producto_id=producto.id, nuevo_producto=producto.id) }}">entradas y salidas</a>.</small>
+    </label>
+    {% else %}
+    <label>Stock inicial
+      <input name="stock_inicial" type="number" min="0" step="1" value="{{ form.get('stock_inicial', 0) }}">
+      <small class="nota">Se registra como entrada “Inventario inicial”.</small>
+    </label>
+    {% endif %}
+  </div>
+
+  <label>Imagen (PNG, JPG o WEBP, máx. 5 MB)
+    <input type="file" name="imagen" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp">
+  </label>
+  {% if producto and producto.imagen %}
+  <div class="fila">
+    <img class="imagen-actual" src="{{ url_for('static', filename='img/productos/' ~ producto.imagen) }}" alt="Imagen actual">
+    <label class="check"><input type="checkbox" name="quitar_imagen" value="1"> Quitar imagen actual</label>
+  </div>
+  {% endif %}
+
+  <div class="fila">
+    <button class="btn btn-primario" type="submit">{{ 'Guardar cambios' if producto else 'Crear producto' }}</button>
+    <a class="btn btn-sec" href="{{ url_for('admin_inv.productos') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

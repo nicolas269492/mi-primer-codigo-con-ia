@@ -1,0 +1,72 @@
+{#
+  Productos estancados en bodega. Ruta: admin_inv.estancados (/admin/estancados).
+  Lista productos sin movimiento en 'dias' días, su valor inmovilizado, y el
+  formulario para cambiar el umbral (admin_inv.estancados_umbral).
+#}
+{% extends "base.html" %}
+{% block titulo %}Productos estancados{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_inventario.css') }}">{% endblock %}
+{% block contenido %}
+<h1>Productos estancados</h1>
+<p class="nota">Productos activos con stock que no han tenido entradas ni salidas en más de <strong>{{ dias }}</strong> días.</p>
+
+<div class="grid-2">
+  <form class="tarjeta formulario" method="get">
+    <strong>Probar otro umbral (sin guardar)</strong>
+    <div class="fila">
+      <input type="number" name="dias" min="1" max="3650" step="1" value="{{ dias }}" required>
+      <button class="btn btn-sec" type="submit">Ver</button>
+      {% if probando %}<a class="btn btn-sec" href="{{ url_for('admin_inv.estancados') }}">Volver a {{ guardado }} días</a>{% endif %}
+    </div>
+  </form>
+  <form class="tarjeta formulario" method="post" action="{{ url_for('admin_inv.estancados_umbral') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <strong>Umbral guardado: {{ guardado }} días</strong>
+    <div class="fila">
+      <input type="number" name="dias" min="1" max="3650" step="1" value="{{ dias }}" required>
+      <button class="btn btn-primario" type="submit">Guardar umbral</button>
+    </div>
+  </form>
+</div>
+
+{% if probando %}<div class="alerta alerta-info">Estás viendo un umbral de prueba de {{ dias }} días; el guardado es {{ guardado }}.</div>{% endif %}
+
+<div class="kpis">
+  <div class="kpi {% if productos %}kpi-alerta{% endif %}"><div class="kpi-valor">{{ productos|length }}</div><div class="kpi-etiqueta">Productos estancados</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ unidades }}</div><div class="kpi-etiqueta">Unidades inmovilizadas</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ total|moneda }}</div><div class="kpi-etiqueta">Valor inmovilizado</div></div>
+</div>
+
+<div class="tarjeta">
+  {% if productos %}
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead>
+        <tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Último movimiento</th>
+            <th class="num">Días sin mov.</th><th class="num">Stock</th><th class="num">Precio</th><th class="num">Valor inmovilizado</th><th></th></tr>
+      </thead>
+      <tbody>
+      {% for p in productos %}
+        <tr>
+          <td><code>{{ p.codigo }}</code></td>
+          <td>{{ p.nombre }}</td>
+          <td>{{ p.categoria }}</td>
+          <td>{{ (p.ultimo_movimiento or p.creado_en).strftime('%d/%m/%Y') }}{% if not p.ultimo_movimiento %} <small class="nota">(creación)</small>{% endif %}</td>
+          <td class="num"><span class="badge {{ 'badge-peligro' if p.dias_sin_movimiento >= dias * 2 else 'badge-alerta' }}">{{ p.dias_sin_movimiento }}</span></td>
+          <td class="num">{{ p.stock }}</td>
+          <td class="num">{{ p.precio|moneda }}</td>
+          <td class="num">{{ p.valor_inmovilizado|moneda }}</td>
+          <td class="num"><a class="btn btn-sec btn-sm" href="{{ url_for('admin_inv.movimientos', producto_id=p.id, nuevo_producto=p.id) }}">Movimientos</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><th colspan="5">Total</th><th class="num">{{ unidades }}</th><th></th><th class="num">{{ total|moneda }}</th><th></th></tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+    <p class="vacio">No hay productos estancados con un umbral de {{ dias }} días. 🎉</p>
+  {% endif %}
+</div>
+{% endblock %}

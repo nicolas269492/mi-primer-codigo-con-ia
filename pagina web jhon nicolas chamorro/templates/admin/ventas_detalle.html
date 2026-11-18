@@ -1,0 +1,51 @@
+{#
+  Detalle de una venta. Ruta: admin_ventas.detalle (/admin/ventas/<id>).
+  Datos del cliente, quién la registró, pedido de origen y líneas vendidas.
+#}
+{% extends "base.html" %}
+{% block titulo %}Venta #{{ venta.id }}{% endblock %}
+{% block contenido %}
+<p><a href="{{ url_for('admin_ventas.ventas') }}">← Volver a ventas</a></p>
+<h1>Venta #{{ venta.id }}</h1>
+
+<div class="kpis">
+  <div class="kpi"><div class="kpi-valor">{{ venta.total|moneda }}</div><div class="kpi-etiqueta">Total</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ unidades }}</div><div class="kpi-etiqueta">Unidades</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ lineas|length }}</div><div class="kpi-etiqueta">Productos distintos</div></div>
+</div>
+
+<div class="tarjeta">
+  <div class="grid-2">
+    <div>
+      <p><strong>Fecha:</strong> {{ venta.fecha.strftime('%Y-%m-%d %H:%M') }}</p>
+      <p><strong>Cliente:</strong> {{ venta.cliente_nombre }} <span class="nota">({{ venta.cliente_email }})</span></p>
+      <p><strong>Registrada por:</strong> {{ venta.usuario_nombre or '—' }}</p>
+    </div>
+    <div>
+      <p><strong>Pedido:</strong>
+        {% if venta.pedido_id %}
+          <a href="{{ url_for('admin_pedidos.detalle', pedido_id=venta.pedido_id) }}">#{{ venta.pedido_id }}</a>
+          {% if venta.pedido_estado %}<span class="badge estado-{{ venta.pedido_estado }}">{{ venta.pedido_estado }}</span>{% endif %}
+        {% else %}<span class="nota">El pedido original ya no existe.</span>{% endif %}
+      </p>
+      {% if venta.pedido_notas %}<p><strong>Notas:</strong> {{ venta.pedido_notas }}</p>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="tarjeta">
+  <h2>Detalle</h2>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Código</th><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio</th><th class="num">Subtotal</th></tr></thead>
+      <tbody>
+      {% for l in lineas %}
+        <tr><td>{{ l.codigo }}</td><td>{{ l.nombre }}</td><td class="num">{{ l.cantidad }}</td>
+            <td class="num">{{ l.precio_unitario|moneda }}</td><td class="num">{{ l.subtotal|moneda }}</td></tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><th colspan="4" class="num">Total</th><th class="num">{{ venta.total|moneda }}</th></tr></tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

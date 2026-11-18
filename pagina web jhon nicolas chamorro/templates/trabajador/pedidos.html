@@ -1,0 +1,72 @@
+{#
+  Tablero de pedidos del trabajador. Ruta: trabajador.pedidos (/trabajador/).
+  Columnas Pendientes / En preparación / Despachados hoy (+ cancelados de hoy).
+  static/js/trabajador.js lo refresca cada 15 s y cambia estados sin recargar.
+#}
+{% extends "base.html" %}
+{% block titulo %}Pedidos{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/trabajador.css') }}">{% endblock %}
+
+{% macro tarjeta(p) %}
+<article class="tp{% if p.sin_stock %} tp-sin-stock{% endif %}" data-id="{{ p.id }}"
+         data-href="{{ url_for('trabajador.pedido', pedido_id=p.id) }}">
+  <div class="fila entre">
+    <a class="tp-num" href="{{ url_for('trabajador.pedido', pedido_id=p.id) }}">Pedido #{{ p.id }}</a>
+    <span class="nota" title="{{ p.fecha }}">{% if p.estado in ('despachado', 'cancelado') %}{{ p.actualizado }}{% else %}{{ p.hace }}{% endif %}</span>
+  </div>
+  <div class="tp-cliente">{{ p.cliente }}</div>
+  <div class="fila entre tp-datos">
+    <span>{{ p.unidades }} {{ 'unidad' if p.unidades == 1 else 'unidades' }} · {{ p.hora }}</span>
+    <strong>{{ p.total|moneda }}</strong>
+  </div>
+  {% if p.sin_stock %}<div class="tp-aviso">⚠ Stock insuficiente para despachar</div>{% endif %}
+  {% if p.acciones %}
+  <div class="tp-acciones">
+    {% for a in p.acciones %}
+    <form class="form-estado" method="post" action="{{ url_for('trabajador.cambiar_estado', pedido_id=p.id) }}"
+          {% if a.confirmar %}data-confirmar="{{ a.confirmar }}"{% endif %}>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="estado" value="{{ a.estado }}">
+      <button class="btn btn-sm {{ a.clase }}" type="submit">{{ a.texto }}</button>
+    </form>
+    {% endfor %}
+  </div>
+  {% endif %}
+</article>
+{% endmacro %}
+
+{% block contenido %}
+<div class="fila entre">
+  <h1>Tablero de pedidos</h1>
+  <span class="nota" id="estado-refresco">Actualización automática cada 15 s</span>
+</div>
+<div id="avisos" class="avisos" aria-live="polite"></div>
+
+<div class="tablero" id="tablero"
+     data-api="{{ url_for('trabajador.api_pedidos') }}"
+     data-base="{{ url_for('trabajador.pedidos') }}">
+  {% for estado, titulo in [('pendiente', 'Pendientes'), ('preparacion', 'En preparación'), ('despachado', 'Despachados hoy')] %}
+  <section class="columna columna-{{ estado }}">
+    <header class="columna-titulo">
+      <span class="badge estado-{{ estado }}">{{ titulo }}</span>
+      <span class="columna-conteo" data-conteo="{{ estado }}">{{ grupos[estado]|length }}</span>
+    </header>
+    <div class="columna-lista" data-lista="{{ estado }}">
+      {% for p in grupos[estado] %}{{ tarjeta(p) }}{% else %}<p class="vacio">Sin pedidos</p>{% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</div>
+
+<details class="cancelados tarjeta">
+  <summary>Cancelados hoy (<span data-conteo="cancelado">{{ grupos.cancelado|length }}</span>)</summary>
+  <div class="columna-lista cancelados-lista" data-lista="cancelado">
+    {% for p in grupos.cancelado %}{{ tarjeta(p) }}{% else %}<p class="vacio">Sin pedidos</p>{% endfor %}
+  </div>
+</details>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/trabajador.js') }}"></script>
+<script>iniciarTablero();</script>
+{% endblock %}

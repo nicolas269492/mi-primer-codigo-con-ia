@@ -1,0 +1,70 @@
+{#
+  Formulario para crear o editar un pedido. Rutas: admin_pedidos.nuevo y admin_pedidos.editar.
+  Si 'pedido' es None se está creando. Las líneas producto/cantidad son dinámicas
+  gracias a static/js/admin_pedidos.js (cada <option> lleva data-precio y data-disponible).
+#}
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar pedido #' ~ pedido.id if pedido else 'Nuevo pedido' }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_ventas.css') }}">{% endblock %}
+{% block contenido %}
+{% set url_volver = url_for('admin_pedidos.detalle', pedido_id=pedido.id) if pedido else url_for('admin_pedidos.pedidos') %}
+<p><a href="{{ url_volver }}">← Volver</a></p>
+<h1>{% if pedido %}Editar pedido #{{ pedido.id }} <span class="badge estado-{{ pedido.estado }}">{{ ETIQUETAS_ESTADO[pedido.estado] }}</span>{% else %}Nuevo pedido{% endif %}</h1>
+
+{% if not productos %}
+  <p class="alerta alerta-info">No hay productos activos para agregar.</p>
+{% endif %}
+
+<form class="formulario tarjeta" method="post" id="form-pedido">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label>Cliente
+    <select name="cliente_id" required>
+      <option value="">— Selecciona un cliente —</option>
+      {% for c in clientes %}
+        <option value="{{ c.id }}" {{ 'selected' if c.id|string == cliente_id }}>{{ c.nombre }} ({{ c.email }}){% if not c.activo %} – inactivo{% endif %}</option>
+      {% endfor %}
+    </select>
+  </label>
+  {% if not clientes %}<p class="nota">No hay clientes activos. Créalos en <a href="{{ url_for('admin_usuarios.nuevo') }}">Usuarios</a>.</p>{% endif %}
+
+  <div>
+    <div class="tabla-scroll">
+      <table class="tabla lineas-pedido">
+        <thead><tr><th>Producto</th><th class="num">Disponible</th><th class="num">Precio</th><th class="num">Cantidad</th><th class="num">Subtotal</th><th></th></tr></thead>
+        <tbody id="lineas">
+        {% for l in lineas %}
+          <tr class="linea">
+            <td>
+              <select name="producto_id[]" class="sel-producto">
+                <option value="">— Producto —</option>
+                {% for p in productos %}
+                  <option value="{{ p.id }}" data-precio="{{ p.precio }}" data-disponible="{{ p.disponible }}" {{ 'selected' if p.id|string == l.producto_id|string }}>{{ p.codigo }} · {{ p.nombre }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td class="num col-disponible">—</td>
+            <td class="num col-precio">—</td>
+            <td class="num"><input type="number" name="cantidad[]" class="inp-cantidad" min="1" step="1" value="{{ l.cantidad }}"></td>
+            <td class="num col-subtotal">—</td>
+            <td><button type="button" class="btn btn-sec btn-sm quitar-linea" title="Quitar línea">✕</button></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot><tr><th colspan="4" class="num">Total estimado</th><th class="num" id="total-pedido">$0</th><th></th></tr></tfoot>
+      </table>
+    </div>
+    <button type="button" class="btn btn-sec btn-sm" id="agregar-linea">+ Agregar producto</button>
+    <p class="nota">El precio se toma del producto al guardar. «Disponible» = stock − unidades reservadas por otros pedidos abiertos.</p>
+  </div>
+
+  <label>Notas
+    <textarea name="notas" rows="3" maxlength="500">{{ notas }}</textarea>
+  </label>
+
+  <div class="fila">
+    <button class="btn btn-primario" type="submit">{{ 'Guardar cambios' if pedido else 'Crear pedido' }}</button>
+    <a class="btn btn-sec" href="{{ url_volver }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/admin_pedidos.js') }}"></script>{% endblock %}

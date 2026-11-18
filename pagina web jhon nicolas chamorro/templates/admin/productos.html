@@ -1,0 +1,98 @@
+{#
+  Listado de productos. Ruta: admin_inv.productos (/admin/productos).
+  Muestra stock, reservado y disponible; botones editar, activar/desactivar y eliminar.
+#}
+{% extends "base.html" %}
+{% block titulo %}Productos{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_inventario.css') }}">{% endblock %}
+{% block contenido %}
+<div class="fila entre">
+  <h1>Productos</h1>
+  <a class="btn btn-primario" href="{{ url_for('admin_inv.producto_nuevo') }}">+ Nuevo producto</a>
+</div>
+
+<form class="filtros" method="get">
+  <label>Buscar
+    <input type="search" name="buscar" value="{{ buscar }}" placeholder="Nombre, código o descripción">
+  </label>
+  <label>Categoría
+    <select name="categoria">
+      <option value="">Todas</option>
+      {% for c in categorias %}<option value="{{ c }}" {% if c == categoria %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Estado
+    <select name="estado">
+      <option value="activos" {% if estado == 'activos' %}selected{% endif %}>Activos</option>
+      <option value="inactivos" {% if estado == 'inactivos' %}selected{% endif %}>Inactivos</option>
+      <option value="todos" {% if estado == 'todos' %}selected{% endif %}>Todos</option>
+    </select>
+  </label>
+  <button class="btn btn-sec" type="submit">Filtrar</button>
+  {% if buscar or categoria or estado != 'activos' %}<a class="btn btn-sec" href="{{ url_for('admin_inv.productos') }}">Limpiar</a>{% endif %}
+</form>
+
+<div class="tarjeta">
+  {% if productos %}
+  <p class="nota">{{ productos|length }} producto(s)</p>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th></th><th>Código</th><th>Producto</th><th>Categoría</th><th class="num">Precio</th>
+          <th class="num">Stock</th><th class="num">Reservado</th><th class="num">Disponible</th>
+          <th class="num">Mínimo</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in productos %}
+        <tr class="{% if not p.activo %}fila-inactiva{% endif %}">
+          <td>
+            {% if p.imagen %}
+              <img class="miniatura" src="{{ url_for('static', filename='img/productos/' ~ p.imagen) }}" alt="">
+            {% else %}
+              <span class="miniatura miniatura-vacia">📦</span>
+            {% endif %}
+          </td>
+          <td><code>{{ p.codigo }}</code></td>
+          <td>
+            {{ p.nombre }}
+            {% if not p.activo %}<span class="badge">inactivo</span>{% endif %}
+            {% if p.descripcion %}<br><small class="nota">{{ p.descripcion|truncate(60) }}</small>{% endif %}
+          </td>
+          <td>{{ p.categoria }}</td>
+          <td class="num">{{ p.precio|moneda }}</td>
+          <td class="num">
+            {% if p.bajo_minimo %}
+              <span class="badge {{ 'badge-peligro' if p.stock == 0 else 'badge-alerta' }}" title="Bajo stock mínimo">{{ p.stock }}</span>
+            {% else %}{{ p.stock }}{% endif %}
+          </td>
+          <td class="num">{{ p.reservado }}</td>
+          <td class="num"><strong>{{ p.disponible }}</strong></td>
+          <td class="num">{{ p.stock_minimo }}</td>
+          <td>
+            <div class="acciones">
+              <a class="btn btn-sec btn-sm" href="{{ url_for('admin_inv.producto_editar', producto_id=p.id) }}">Editar</a>
+              <a class="btn btn-sec btn-sm" href="{{ url_for('admin_inv.movimientos', producto_id=p.id, nuevo_producto=p.id) }}">Movimientos</a>
+              <form method="post" action="{{ url_for('admin_inv.producto_estado', producto_id=p.id) }}"
+                    data-confirmar="¿{{ 'Desactivar' if p.activo else 'Activar' }} '{{ p.nombre }}'?">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm {{ 'btn-sec' if p.activo else 'btn-ok' }}" type="submit">{{ 'Desactivar' if p.activo else 'Activar' }}</button>
+              </form>
+              <form method="post" action="{{ url_for('admin_inv.producto_eliminar', producto_id=p.id) }}"
+                    data-confirmar="¿Eliminar definitivamente '{{ p.nombre }}'? Solo es posible si no tiene movimientos, pedidos ni ventas.">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-peligro btn-sm" type="submit">Eliminar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="vacio">No hay productos que coincidan con el filtro.</p>
+  {% endif %}
+</div>
+{% endblock %}

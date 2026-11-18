@@ -1,0 +1,13 @@
+{#
+  Página de error (400, 403, 404). La muestran los manejadores de error de src/__init__.py.
+  Variables: codigo, mensaje.
+#}
+{% extends "base.html" %}
+{% block titulo %}Error {{ codigo }}{% endblock %}
+{% block contenido %}
+<div class="tarjeta tarjeta-estrecha">
+  <h1>Error {{ codigo }}</h1>
+  <p>{{ mensaje }}</p>
+  <a class="btn btn-primario" href="{{ url_for('auth.inicio') }}">Volver al inicio</a>
+</div>
+{% endblock %}

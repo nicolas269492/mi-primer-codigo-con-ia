@@ -1,0 +1,85 @@
+{#
+  Disponibilidad de productos para el trabajador. Ruta: trabajador.disponibilidad.
+  Tabla de solo lectura con filtros; static/js/trabajador.js la refresca cada 30 s.
+#}
+{% extends "base.html" %}
+{% block titulo %}Disponibilidad{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/trabajador.css') }}">{% endblock %}
+
+{% macro badge_estado(e) %}
+{%- if e == 'agotado' %}<span class="badge badge-peligro">Agotado</span>
+{%- elif e == 'bajo' %}<span class="badge badge-alerta">Bajo mínimo</span>
+{%- else %}<span class="badge badge-ok">OK</span>{% endif -%}
+{% endmacro %}
+
+{% block contenido %}
+<div class="fila entre">
+  <h1>Disponibilidad de productos</h1>
+  <span class="nota" id="estado-refresco">Actualización automática cada 30 s</span>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="kpi-valor" id="k-total">{{ resumen.total }}</div><div class="kpi-etiqueta">Productos activos</div></div>
+  <div class="kpi kpi-alerta"><div class="kpi-valor" id="k-agotados">{{ resumen.agotados }}</div><div class="kpi-etiqueta">Agotados</div></div>
+  <div class="kpi"><div class="kpi-valor" id="k-bajo">{{ resumen.bajo }}</div><div class="kpi-etiqueta">Bajo mínimo</div></div>
+</div>
+
+<section class="tarjeta">
+  <form class="filtros" id="filtros-disp" method="get" data-api="{{ url_for('trabajador.api_disponibilidad') }}">
+    <label>Buscar
+      <input type="search" name="buscar" value="{{ buscar }}" placeholder="Código o nombre">
+    </label>
+    <label>Categoría
+      <select name="categoria">
+        <option value="">Todas</option>
+        {% for c in categorias %}<option value="{{ c }}" {{ 'selected' if c == categoria }}>{{ c }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Estado
+      <select name="estado">
+        <option value="">Todos</option>
+        <option value="agotado" {{ 'selected' if estado == 'agotado' }}>Agotados</option>
+        <option value="bajo" {{ 'selected' if estado == 'bajo' }}>Bajo mínimo</option>
+        <option value="ok" {{ 'selected' if estado == 'ok' }}>OK</option>
+      </select>
+    </label>
+    <button class="btn btn-primario" type="submit">Filtrar</button>
+    <a class="btn btn-sec" href="{{ url_for('trabajador.disponibilidad') }}">Limpiar</a>
+  </form>
+
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Código</th><th>Producto</th><th>Categoría</th>
+          <th class="num">Stock</th><th class="num">Reservado</th><th class="num">Disponible</th>
+          <th class="num">Mínimo</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-disp">
+        {% for p in productos %}
+        <tr class="disp-{{ p.estado }}">
+          <td><code>{{ p.codigo }}</code></td>
+          <td>{{ p.nombre }}</td>
+          <td>{{ p.categoria }}</td>
+          <td class="num">{{ p.stock }}</td>
+          <td class="num">{{ p.reservado }}</td>
+          <td class="num"><strong>{{ p.disponible }}</strong></td>
+          <td class="num">{{ p.minimo }}</td>
+          <td>{{ badge_estado(p.estado) }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="vacio">No hay productos que coincidan con el filtro.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="nota">Disponible = stock − reservado (unidades en pedidos pendientes o en preparación).
+    "Agotado" significa que no queda nada disponible para nuevos pedidos.</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/trabajador.js') }}"></script>
+<script>iniciarDisponibilidad();</script>
+{% endblock %}

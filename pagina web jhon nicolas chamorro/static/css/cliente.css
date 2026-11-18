@@ -1,0 +1,52 @@
+/* Estilos propios del módulo cliente (complementan estilos.css). */
+
+.producto-nombre { margin: 0; font-size: 1rem; line-height: 1.3; }
+.producto-info .p-cat { justify-self: start; }
+.producto-info .p-desc { margin: 0; }
+.p-agregar { margin-top: auto; padding-top: .35rem; flex-wrap: nowrap; }
+.p-agregar .p-cant { width: 4.5rem; }
+.p-agregar .btn { flex: 1; white-space: nowrap; }
+/* Las clases con display (flex/grid) anulan el atributo hidden: se fuerza aquí */
+[hidden] { display: none !important; }
+
+.check-cliente span { display: flex; align-items: center; gap: .35rem; padding: .5rem 0; color: var(--texto); font-size: .9rem; }
+
+#estado-actualizacion { font-variant-numeric: tabular-nums; }
+.indicador-error { color: var(--peligro); }
+
+.aviso-cliente {
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 20; max-width: min(380px, calc(100vw - 2rem));
+  box-shadow: 0 4px 16px rgba(16, 24, 40, .15); margin: 0;
+}
+
+@keyframes destello { from { background: #fff4d6; } to { background: transparent; } }
+.destello { animation: destello 1.2s ease-out; border-radius: 6px; }
+
+/* Carrito */
+.cant-carrito { width: 5rem; }
+.cargando { opacity: .6; pointer-events: none; transition: opacity .2s; }
+
+/* Línea de tiempo del pedido */
+.linea-tiempo { list-style: none; display: flex; margin: 0; padding: 0; gap: 0; }
+.paso { flex: 1; position: relative; display: grid; justify-items: center; text-align: center; gap: .4rem; }
+.paso::before {
+  content: ""; position: absolute; top: 9px; left: -50%; width: 100%; height: 3px; background: var(--borde);
+}
+.paso:first-child::before { display: none; }
+.paso-punto {
+  width: 20px; height: 20px; border-radius: 50%; border: 3px solid var(--borde);
+  background: var(--superficie); position: relative; z-index: 1;
+}
+.paso-texto { display: grid; gap: .1rem; font-size: .9rem; }
+.paso-futuro .paso-texto { color: var(--texto-suave); }
+.paso-hecho .paso-punto, .paso-actual .paso-punto { background: var(--ok); border-color: var(--ok); }
+.paso-hecho::before, .paso-actual::before { background: var(--ok); }
+.paso-actual .paso-punto { box-shadow: 0 0 0 4px rgba(30, 142, 78, .2); }
+.linea-cancelada .paso-cancelado .paso-punto { background: var(--peligro); border-color: var(--peligro); box-shadow: 0 0 0 4px rgba(200, 55, 45, .2); }
+.linea-cancelada .paso-cancelado::before { background: var(--peligro); }
+
+@media (max-width: 640px) {
+  .linea-tiempo { flex-direction: column; gap: .9rem; }
+  .paso { grid-template-columns: auto 1fr; justify-items: start; text-align: left; align-items: center; gap: .6rem; }
+  .paso::before { display: none; }
+}

@@ -1,0 +1,89 @@
+{#
+  Detalle de un pedido para alistarlo. Ruta: trabajador.pedido (/trabajador/pedido/<id>).
+  Lista de productos con casillas de 'alistado' (guardadas en el navegador),
+  aviso si falta stock y botones de cambio de estado.
+#}
+{% extends "base.html" %}
+{% block titulo %}Pedido #{{ pedido.id }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/trabajador.css') }}">{% endblock %}
+
+{% block contenido %}
+<p><a href="{{ url_for('trabajador.pedidos') }}">← Volver al tablero</a></p>
+
+<div class="fila entre">
+  <h1>Pedido #{{ pedido.id }} <span class="badge estado-{{ pedido.estado }}">{{ nombres_estado[pedido.estado] }}</span></h1>
+  {% if acciones %}
+  <div class="fila">
+    {% for estado, texto, clase, confirmar in acciones %}
+    <form method="post" action="{{ url_for('trabajador.cambiar_estado', pedido_id=pedido.id) }}"
+          {% if confirmar %}data-confirmar="{{ confirmar }}"{% endif %}>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="estado" value="{{ estado }}">
+      <input type="hidden" name="volver" value="detalle">
+      <button class="btn {{ clase }}" type="submit">{{ texto }}</button>
+    </form>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="kpi-valor">{{ pedido.cliente_nombre }}</div><div class="kpi-etiqueta">{{ pedido.cliente_email }}</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ pedido.creado_en.strftime('%H:%M') }}</div><div class="kpi-etiqueta">{{ pedido.creado_en.strftime('%d/%m/%Y') }} · {{ hace }}</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ unidades }}</div><div class="kpi-etiqueta">Unidades</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ pedido.total|moneda }}</div><div class="kpi-etiqueta">Total</div></div>
+</div>
+
+{% if pedido.notas %}<div class="alerta alerta-info"><strong>Notas del cliente:</strong> {{ pedido.notas }}</div>{% endif %}
+{% if pedido.atendido_por_nombre %}<p class="nota">Atendido por: {{ pedido.atendido_por_nombre }}</p>{% endif %}
+
+{% if faltantes and pedido.estado in ('pendiente', 'preparacion') %}
+<div class="alerta alerta-error">
+  ⚠ No hay stock suficiente para despachar:
+  {% for it in faltantes %}<strong>{{ it.nombre }}</strong> (se piden {{ it.cantidad }}, hay {{ it.stock }}){{ ', ' if not loop.last }}{% endfor %}.
+</div>
+{% endif %}
+
+<section class="tarjeta">
+  <div class="fila entre">
+    <h2 style="margin:0">Lista de alistamiento</h2>
+    {% if pedido.estado in ('pendiente', 'preparacion') %}
+    <span class="nota"><span id="progreso-alistado">0</span> de {{ pedido['items']|length }} alistados</span>
+    {% endif %}
+  </div>
+  <div class="tabla-scroll">
+    <table class="tabla alistar" id="lista-alistar" data-pedido="{{ pedido.id }}">
+      <thead>
+        <tr>
+          {% if pedido.estado in ('pendiente', 'preparacion') %}<th>Alistado</th>{% endif %}
+          <th>Código</th><th>Producto</th><th class="num">Cantidad</th><th class="num">Stock actual</th>
+          <th class="num">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in pedido['items'] %}
+        {% set falta = it.cantidad > it.stock and pedido.estado in ('pendiente', 'preparacion') %}
+        <tr class="{{ 'fila-falta' if falta }}">
+          {% if pedido.estado in ('pendiente', 'preparacion') %}
+          <td><input type="checkbox" class="chk-alistado" data-item="{{ it.id }}" aria-label="Alistado {{ it.nombre }}"></td>
+          {% endif %}
+          <td><code>{{ it.codigo }}</code></td>
+          <td>{{ it.nombre }}</td>
+          <td class="num"><strong>{{ it.cantidad }}</strong></td>
+          <td class="num">{{ it.stock }}{% if falta %} <span class="badge badge-peligro">Falta {{ it.cantidad - it.stock }}</span>{% endif %}</td>
+          <td class="num">{{ it.subtotal|moneda }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if pedido.estado in ('pendiente', 'preparacion') %}
+  <p class="nota">Las casillas solo se guardan en este navegador como ayuda para alistar.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/trabajador.js') }}"></script>
+<script>iniciarAlistamiento();</script>
+{% endblock %}

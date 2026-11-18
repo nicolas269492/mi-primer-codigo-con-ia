@@ -1,0 +1,25 @@
+/* Estilos propios del módulo Admin – Inventario */
+.kpi-enlace { text-decoration: none; color: inherit; transition: border-color .15s; }
+.kpi-enlace:hover { border-color: var(--primario); }
+.sin-margen { margin: 0 0 .75rem; }
+
+.miniatura {
+  width: 44px; height: 44px; border-radius: 6px; object-fit: cover; display: block;
+  background: var(--fondo); border: 1px solid var(--borde);
+}
+.miniatura-vacia { display: grid; place-items: center; color: var(--texto-suave); font-size: 1.1rem; }
+.imagen-actual { max-width: 160px; border-radius: 8px; border: 1px solid var(--borde); display: block; }
+
+.fila-inactiva td { opacity: .55; }
+.acciones { display: flex; gap: .3rem; justify-content: flex-end; flex-wrap: wrap; }
+.acciones form { margin: 0; }
+
+.form-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .85rem; }
+.form-mov { display: grid; grid-template-columns: 2fr 1fr 1fr 2fr auto; gap: .6rem; align-items: end; }
+.form-mov label { display: grid; gap: .2rem; font-size: .8rem; color: var(--texto-suave); }
+@media (max-width: 760px) { .form-mov { grid-template-columns: 1fr 1fr; } .form-mov .ancho { grid-column: 1 / -1; } }
+
+.totales { display: flex; flex-wrap: wrap; gap: .5rem 1.5rem; margin-bottom: .75rem; }
+.totales strong { font-variant-numeric: tabular-nums; }
+.paginacion { display: flex; gap: .4rem; align-items: center; justify-content: center; margin-top: 1rem; }
+.check { display: flex !important; flex-direction: row; align-items: center; gap: .4rem; }

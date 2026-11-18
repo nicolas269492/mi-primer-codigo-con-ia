@@ -1,0 +1,108 @@
+{#
+  Entradas y salidas de bodega. Ruta: admin_inv.movimientos (/admin/movimientos).
+  Arriba: formulario para registrar un movimiento (admin_inv.movimiento_registrar).
+  Abajo: historial con filtros, totales y paginación.
+#}
+{% extends "base.html" %}
+{% block titulo %}Entradas y salidas{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_inventario.css') }}">{% endblock %}
+{% block contenido %}
+<h1>Entradas y salidas</h1>
+
+<section class="tarjeta">
+  <h2 class="sin-margen">Registrar movimiento</h2>
+  {% if productos_activos %}
+  <form class="form-mov" method="post" action="{{ url_for('admin_inv.movimiento_registrar') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="volver" value="{{ request.full_path }}">
+    <label class="ancho">Producto
+      <select name="producto_id" required>
+        <option value="">— Selecciona —</option>
+        {% for p in productos_activos %}
+          <option value="{{ p.id }}" {% if p.id == preseleccion %}selected{% endif %}>{{ p.codigo }} · {{ p.nombre }} (stock {{ p.stock }})</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Tipo
+      <select name="tipo" required>
+        <option value="entrada">Entrada</option>
+        <option value="salida">Salida</option>
+      </select>
+    </label>
+    <label>Cantidad
+      <input type="number" name="cantidad" min="1" step="1" required>
+    </label>
+    <label class="ancho">Motivo
+      <input name="motivo" maxlength="255" placeholder="Compra a proveedor, merma, ajuste…">
+    </label>
+    <button class="btn btn-primario" type="submit">Registrar</button>
+  </form>
+  {% else %}
+    <p class="vacio">No hay productos activos. <a href="{{ url_for('admin_inv.producto_nuevo') }}">Crea uno</a>.</p>
+  {% endif %}
+</section>
+
+<section class="tarjeta">
+  <h2 class="sin-margen">Historial</h2>
+  <form class="filtros" method="get">
+    <label>Producto
+      <select name="producto_id">
+        <option value="">Todos</option>
+        {% for p in todos_productos %}
+          <option value="{{ p.id }}" {% if p.id == filtros.producto_id %}selected{% endif %}>{{ p.codigo }} · {{ p.nombre }}{% if not p.activo %} (inactivo){% endif %}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Tipo
+      <select name="tipo">
+        <option value="">Todos</option>
+        <option value="entrada" {% if filtros.tipo == 'entrada' %}selected{% endif %}>Entradas</option>
+        <option value="salida" {% if filtros.tipo == 'salida' %}selected{% endif %}>Salidas</option>
+      </select>
+    </label>
+    <label>Desde <input type="date" name="desde" value="{{ filtros.desde or '' }}"></label>
+    <label>Hasta <input type="date" name="hasta" value="{{ filtros.hasta or '' }}"></label>
+    <button class="btn btn-sec" type="submit">Filtrar</button>
+    {% if args_base %}<a class="btn btn-sec" href="{{ url_for('admin_inv.movimientos') }}">Limpiar</a>{% endif %}
+  </form>
+
+  <div class="totales">
+    <span>Movimientos: <strong>{{ totales.n }}</strong></span>
+    <span>Total entradas: <strong>+{{ totales.entradas }}</strong></span>
+    <span>Total salidas: <strong>−{{ totales.salidas }}</strong></span>
+    <span>Neto: <strong>{{ '%+d'|format(totales.entradas - totales.salidas) }}</strong></span>
+  </div>
+
+  {% if movimientos %}
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead>
+        <tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="num">Cantidad</th><th>Motivo</th><th>Usuario</th></tr>
+      </thead>
+      <tbody>
+      {% for m in movimientos %}
+        <tr>
+          <td>{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td>{{ m.producto }}<br><small class="nota">{{ m.codigo }}</small></td>
+          <td><span class="badge {{ 'badge-ok' if m.tipo == 'entrada' else 'badge-alerta' }}">{{ m.tipo }}</span></td>
+          <td class="num">{{ '+' if m.tipo == 'entrada' else '−' }}{{ m.cantidad }}</td>
+          <td>{{ m.motivo }}{% if m.pedido_id %} <small class="nota">(pedido #{{ m.pedido_id }})</small>{% endif %}</td>
+          <td>{{ m.usuario or '—' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if paginas > 1 %}
+  <nav class="paginacion">
+    {% if pagina > 1 %}<a class="btn btn-sec btn-sm" href="{{ url_for('admin_inv.movimientos', pagina=pagina-1, **args_base) }}">← Anterior</a>{% endif %}
+    <span class="nota">Página {{ pagina }} de {{ paginas }}</span>
+    {% if pagina < paginas %}<a class="btn btn-sec btn-sm" href="{{ url_for('admin_inv.movimientos', pagina=pagina+1, **args_base) }}">Siguiente →</a>{% endif %}
+  </nav>
+  {% endif %}
+  {% else %}
+    <p class="vacio">No hay movimientos con estos filtros.</p>
+  {% endif %}
+</section>
+{% endblock %}

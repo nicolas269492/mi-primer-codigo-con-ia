@@ -1,0 +1,39 @@
+{#
+  Catálogo del cliente. Ruta: cliente.catalogo (/cliente/).
+  Los productos iniciales van incrustados como JSON en #datos-catalogo;
+  static/js/cliente.js dibuja las tarjetas y las actualiza cada 15 s desde la API.
+#}
+{% extends "base.html" %}
+{% block titulo %}Catálogo{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/cliente.css') }}">{% endblock %}
+{% block contenido %}
+<div class="fila entre">
+  <h1>Catálogo</h1>
+  <span class="nota" id="estado-actualizacion" aria-live="polite">Actualizado hace 0 s</span>
+</div>
+
+<div class="filtros" role="search">
+  <label>Buscar
+    <input type="search" id="filtro-buscar" placeholder="Nombre o descripción…" autocomplete="off">
+  </label>
+  <label>Categoría
+    <select id="filtro-categoria">
+      <option value="">Todas</option>
+      {% for c in categorias %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="check-cliente">
+    <span><input type="checkbox" id="filtro-disponibles"> Solo disponibles</span>
+  </label>
+</div>
+
+<div id="aviso-cliente" class="aviso-cliente" role="status" aria-live="polite" hidden></div>
+
+<div class="catalogo" id="catalogo"
+     data-api="{{ url_for('cliente.api_catalogo') }}"
+     data-api-carrito="{{ url_for('cliente.api_carrito_agregar') }}"></div>
+<p class="vacio" id="catalogo-vacio" hidden>No hay productos que coincidan con tu búsqueda.</p>
+
+<script id="datos-catalogo" type="application/json">{{ {'productos': productos, 'carrito': carrito}|tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/cliente.js') }}"></script>{% endblock %}

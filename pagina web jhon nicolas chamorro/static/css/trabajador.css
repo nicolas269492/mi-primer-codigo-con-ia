@@ -1,0 +1,62 @@
+/* Módulo del trabajador: tablero kanban, alistamiento y disponibilidad. */
+
+.tablero {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start;
+}
+@media (max-width: 900px) { .tablero { grid-template-columns: 1fr; } }
+
+.columna {
+  background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio);
+  padding: .75rem; box-shadow: var(--sombra); min-height: 160px;
+}
+.columna-pendiente   { border-top: 4px solid #e0a100; }
+.columna-preparacion { border-top: 4px solid var(--primario); }
+.columna-despachado  { border-top: 4px solid var(--ok); }
+.columna-titulo { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
+.columna-titulo .badge { font-size: .85rem; }
+.columna-conteo { font-weight: 700; color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+.columna-lista { display: grid; gap: .6rem; }
+.columna-lista .vacio { padding: 1rem .5rem; margin: 0; }
+
+/* Tarjeta de pedido */
+.tp {
+  background: var(--fondo); border: 1px solid var(--borde); border-radius: 8px;
+  padding: .65rem .75rem; display: grid; gap: .3rem; cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.tp:hover { border-color: var(--primario); }
+.tp-num { font-weight: 700; text-decoration: none; color: var(--texto); }
+.tp-num:hover { color: var(--primario); }
+.tp-cliente { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-datos { font-size: .88rem; color: var(--texto-suave); }
+.tp-datos strong { color: var(--texto); }
+.tp-aviso { font-size: .82rem; font-weight: 600; color: var(--peligro); }
+.tp-sin-stock { border-left: 4px solid var(--peligro); }
+.tp-acciones { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .25rem; }
+.tp-acciones form { margin: 0; }
+.tp-nuevo { animation: tp-destello 1.2s ease-in-out 3; border-color: #e0a100; }
+@keyframes tp-destello {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 3px rgba(224, 161, 0, .45); }
+}
+
+.cancelados { margin-top: 1.25rem; }
+.cancelados summary { cursor: pointer; font-weight: 600; color: var(--texto-suave); }
+.cancelados-lista { margin-top: .75rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.cancelados .tp { opacity: .75; }
+
+/* Avisos flotantes */
+.avisos {
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 50; display: grid; gap: .5rem;
+  max-width: min(380px, calc(100vw - 2rem));
+}
+.aviso-flotante { margin: 0; box-shadow: 0 4px 14px rgba(16, 24, 40, .18); }
+
+/* Alistamiento */
+.alistar input[type="checkbox"] { width: 1.2rem; height: 1.2rem; cursor: pointer; }
+.alistar .fila-alistada td { text-decoration: line-through; color: var(--texto-suave); }
+.alistar .fila-alistada td:first-child { text-decoration: none; }
+.fila-falta { background: rgba(200, 55, 45, .08); }
+
+/* Disponibilidad */
+.disp-agotado td { color: var(--peligro); }

@@ -1,0 +1,70 @@
+{#
+  Listado de usuarios. Ruta: admin_usuarios.usuarios (/admin/usuarios/).
+  Filtros por rol, estado y texto; botones editar y activar/desactivar.
+#}
+{% extends "base.html" %}
+{% block titulo %}Usuarios{% endblock %}
+{% block contenido %}
+<div class="fila entre">
+  <h1>Usuarios</h1>
+  <a class="btn btn-primario" href="{{ url_for('admin_usuarios.nuevo') }}">+ Nuevo usuario</a>
+</div>
+
+<div class="kpis">
+  {% for r in ROLES %}
+  <div class="kpi"><div class="kpi-valor">{{ conteo[r] }}</div><div class="kpi-etiqueta">{{ ETIQUETAS_ROL[r] }} · activos</div></div>
+  {% endfor %}
+</div>
+
+<form class="filtros tarjeta" method="get">
+  <label>Buscar <input type="search" name="buscar" value="{{ buscar }}" placeholder="Nombre o correo"></label>
+  <label>Rol
+    <select name="rol"><option value="">Todos</option>
+      {% for r in ROLES %}<option value="{{ r }}" {{ 'selected' if r == rol }}>{{ ETIQUETAS_ROL[r] }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Estado
+    <select name="estado"><option value="">Todos</option>
+      <option value="activo" {{ 'selected' if estado == 'activo' }}>Activos</option>
+      <option value="inactivo" {{ 'selected' if estado == 'inactivo' }}>Inactivos</option>
+    </select>
+  </label>
+  <button class="btn btn-primario" type="submit">Filtrar</button>
+  <a class="btn btn-sec" href="{{ url_for('admin_usuarios.usuarios') }}">Limpiar</a>
+</form>
+
+<div class="tarjeta">
+  {% if usuarios %}
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>#</th><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th class="num">Pedidos</th><th>Creado</th><th>Acciones</th></tr></thead>
+      <tbody>
+      {% for u in usuarios %}
+        <tr>
+          <td>{{ u.id }}</td>
+          <td>{{ u.nombre }}{% if u.id == usuario_actual.id %} <span class="badge">tú</span>{% endif %}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ ETIQUETAS_ROL[u.rol] }}</td>
+          <td>{% if u.activo %}<span class="badge badge-ok">Activo</span>{% else %}<span class="badge badge-peligro">Inactivo</span>{% endif %}</td>
+          <td class="num">{% if u.rol == 'cliente' %}<a href="{{ url_for('admin_pedidos.pedidos', cliente_id=u.id) }}">{{ u.num_pedidos }}</a>{% else %}—{% endif %}</td>
+          <td>{{ u.creado_en.strftime('%Y-%m-%d') }}</td>
+          <td class="fila">
+            <a class="btn btn-sec btn-sm" href="{{ url_for('admin_usuarios.editar', usuario_id=u.id) }}">Editar</a>
+            {% if u.id != usuario_actual.id %}
+            <form method="post" action="{{ url_for('admin_usuarios.cambiar_activo', usuario_id=u.id) }}"
+                  data-confirmar="¿{{ 'Desactivar' if u.activo else 'Activar' }} a {{ u.nombre }}?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm {{ 'btn-peligro' if u.activo else 'btn-ok' }}" type="submit">{{ 'Desactivar' if u.activo else 'Activar' }}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="vacio">No hay usuarios con esos filtros.</p>
+  {% endif %}
+</div>
+{% endblock %}

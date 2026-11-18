@@ -1,0 +1,60 @@
+{#
+  Plantilla base: todas las páginas la extienden con {% extends "base.html" %}.
+  Contiene la barra superior con el menú según el rol del usuario, los mensajes
+  flash (alertas) y carga estilos.css y comun.js.
+  Bloques que rellenan las demás páginas: titulo, head (CSS extra), contenido, scripts (JS extra).
+  El <meta name="csrf-token"> lo usa el JavaScript para enviar peticiones POST seguras.
+#}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block titulo %}Almacén{% endblock %} · Control de Almacén</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="barra">
+    <a class="marca" href="{{ url_for('auth.inicio') }}">📦 Almacén</a>
+    {% if usuario_actual %}
+    <nav class="menu">
+      {% if usuario_actual.rol == 'admin' %}
+        <a href="{{ url_for('admin_inv.dashboard') }}">Panel</a>
+        <a href="{{ url_for('admin_inv.productos') }}">Productos</a>
+        <a href="{{ url_for('admin_inv.movimientos') }}">Entradas/Salidas</a>
+        <a href="{{ url_for('admin_inv.estancados') }}">Estancados</a>
+        <a href="{{ url_for('admin_ventas.ventas') }}">Ventas</a>
+        <a href="{{ url_for('admin_pedidos.pedidos') }}">Pedidos</a>
+        <a href="{{ url_for('admin_usuarios.usuarios') }}">Usuarios</a>
+      {% elif usuario_actual.rol == 'trabajador' %}
+        <a href="{{ url_for('trabajador.pedidos') }}">Pedidos</a>
+        <a href="{{ url_for('trabajador.disponibilidad') }}">Disponibilidad</a>
+      {% else %}
+        <a href="{{ url_for('cliente.catalogo') }}">Catálogo</a>
+        <a href="{{ url_for('cliente.carrito') }}">Carrito <span class="badge" id="contador-carrito"></span></a>
+        <a href="{{ url_for('cliente.mis_pedidos') }}">Mis pedidos</a>
+      {% endif %}
+    </nav>
+    <form class="salir" method="post" action="{{ url_for('auth.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <span class="quien">{{ usuario_actual.nombre }} <small>({{ usuario_actual.rol }})</small></span>
+      <button class="btn btn-sec btn-sm" type="submit">Salir</button>
+    </form>
+    {% endif %}
+  </header>
+
+  <main class="contenedor">
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in mensajes %}
+        <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+    {% block contenido %}{% endblock %}
+  </main>
+
+  <script src="{{ url_for('static', filename='js/comun.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

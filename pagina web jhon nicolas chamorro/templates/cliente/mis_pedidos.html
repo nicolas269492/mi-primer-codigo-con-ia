@@ -1,0 +1,34 @@
+{#
+  Historial de pedidos del cliente. Ruta: cliente.mis_pedidos (/cliente/mis_pedidos).
+#}
+{% extends "base.html" %}
+{% block titulo %}Mis pedidos{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/cliente.css') }}">{% endblock %}
+{% block contenido %}
+<h1>Mis pedidos</h1>
+{% set nombres = {'pendiente': 'Pendiente', 'preparacion': 'En preparación', 'despachado': 'Despachado', 'cancelado': 'Cancelado'} %}
+<div class="tarjeta">
+  {% if pedidos %}
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Pedido</th><th>Fecha</th><th>Estado</th><th class="num">Unidades</th><th class="num">Total</th><th></th></tr></thead>
+      <tbody>
+        {% for p in pedidos %}
+        <tr>
+          <td>#{{ p.id }}</td>
+          <td>{{ p.creado_en.strftime('%d/%m/%Y %H:%M') }}</td>
+          <td><span class="badge estado-{{ p.estado }}">{{ nombres[p.estado] }}</span></td>
+          <td class="num">{{ p.unidades|int }}</td>
+          <td class="num">{{ p.total|moneda }}</td>
+          <td><a class="btn btn-sec btn-sm" href="{{ url_for('cliente.pedido_detalle', pedido_id=p.id) }}">Ver detalle</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="vacio">Aún no has hecho pedidos. <a href="{{ url_for('cliente.catalogo') }}">Ir al catálogo</a></p>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/cliente.js') }}"></script>{% endblock %}

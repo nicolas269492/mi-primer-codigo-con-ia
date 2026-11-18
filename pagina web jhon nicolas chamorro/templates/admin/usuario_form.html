@@ -1,0 +1,37 @@
+{#
+  Formulario para crear o editar un usuario. Rutas: admin_usuarios.nuevo y admin_usuarios.editar.
+  Al editar, la contraseña es opcional (vacía = no cambiarla). 'es_yo' bloquea quitarse el rol de admin.
+#}
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar usuario' if usuario else 'Nuevo usuario' }}{% endblock %}
+{% block contenido %}
+<p><a href="{{ url_for('admin_usuarios.usuarios') }}">← Volver a usuarios</a></p>
+<div class="tarjeta" style="max-width: 560px">
+  <h1>{{ 'Editar usuario #' ~ usuario.id if usuario else 'Nuevo usuario' }}</h1>
+  {% if usuario and not usuario.activo %}<p class="alerta alerta-info">Este usuario está desactivado y no puede iniciar sesión.</p>{% endif %}
+  <form class="formulario" method="post" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nombre <input name="nombre" value="{{ datos.nombre }}" maxlength="120" required></label>
+    <label>Correo electrónico <input type="email" name="email" value="{{ datos.email }}" maxlength="120" required></label>
+    <label>Rol
+      {% if es_yo %}
+        <select disabled><option>{{ ETIQUETAS_ROL['admin'] }}</option></select>
+        <input type="hidden" name="rol" value="admin">
+        <span class="nota">No puedes quitarte el rol de administrador a ti mismo.</span>
+      {% else %}
+        <select name="rol" required>
+          {% for r in ROLES %}<option value="{{ r }}" {{ 'selected' if r == datos.rol }}>{{ ETIQUETAS_ROL[r] }}</option>{% endfor %}
+        </select>
+      {% endif %}
+    </label>
+    <label>{{ 'Nueva contraseña (opcional)' if usuario else 'Contraseña' }}
+      <input type="password" name="password" minlength="6" autocomplete="new-password" {{ '' if usuario else 'required' }}
+             placeholder="{{ 'Déjala vacía para no cambiarla' if usuario else 'Mínimo 6 caracteres' }}">
+    </label>
+    <div class="fila">
+      <button class="btn btn-primario" type="submit">{{ 'Guardar cambios' if usuario else 'Crear usuario' }}</button>
+      <a class="btn btn-sec" href="{{ url_for('admin_usuarios.usuarios') }}">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

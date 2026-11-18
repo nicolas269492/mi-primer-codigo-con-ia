@@ -1,0 +1,58 @@
+{#
+  Carrito del cliente. Ruta: cliente.carrito (/cliente/carrito).
+  Se dibuja con los datos de 'resumen' y luego static/js/cliente.js permite
+  cambiar cantidades/quitar sin recargar. El formulario envía el pedido a cliente.enviar_pedido.
+#}
+{% extends "base.html" %}
+{% block titulo %}Carrito{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/cliente.css') }}">{% endblock %}
+{% block contenido %}
+<h1>Tu carrito</h1>
+
+<div id="avisos-carrito" aria-live="polite">
+  {% for a in resumen.avisos %}<div class="alerta alerta-info">{{ a }}</div>{% endfor %}
+</div>
+
+<div class="tarjeta" id="carrito"
+     data-api="{{ url_for('cliente.api_carrito_resumen') }}"
+     data-api-fijar="{{ url_for('cliente.api_carrito_agregar') }}">
+  <div class="tabla-scroll" id="carrito-tabla" {% if not resumen.lineas %}hidden{% endif %}>
+    <table class="tabla">
+      <thead>
+        <tr><th>Producto</th><th class="num">Precio</th><th>Cantidad</th><th class="num">Subtotal</th><th></th></tr>
+      </thead>
+      <tbody id="carrito-lineas">
+        {% for l in resumen.lineas %}
+        <tr data-id="{{ l.id }}">
+          <td><strong>{{ l.nombre }}</strong><br><span class="nota">{{ l.categoria }} · Disponible: {{ l.disponible }}</span></td>
+          <td class="num">{{ l.precio|moneda }}</td>
+          <td><input class="cant-carrito" type="number" min="1" max="{{ l.disponible }}" value="{{ l.cantidad }}" aria-label="Cantidad de {{ l.nombre }}"></td>
+          <td class="num">{{ l.subtotal|moneda }}</td>
+          <td><button type="button" class="btn btn-sec btn-sm quitar">Quitar</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><th colspan="3" class="num">Total</th><th class="num" id="carrito-total">{{ resumen.total|moneda }}</th><th></th></tr>
+      </tfoot>
+    </table>
+  </div>
+  <p class="vacio" id="carrito-vacio" {% if resumen.lineas %}hidden{% endif %}>
+    Tu carrito está vacío. <a href="{{ url_for('cliente.catalogo') }}">Ver catálogo</a>
+  </p>
+</div>
+
+<form class="tarjeta formulario" id="form-pedido" method="post" action="{{ url_for('cliente.enviar_pedido') }}"
+      {% if not resumen.lineas %}hidden{% endif %}>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <label>Notas para el pedido (opcional)
+    <textarea name="notas" rows="3" maxlength="500" placeholder="Ej.: entregar en la portería">{{ notas }}</textarea>
+  </label>
+  <div class="fila entre">
+    <a class="btn btn-sec" href="{{ url_for('cliente.catalogo') }}">Seguir comprando</a>
+    <button class="btn btn-primario" type="submit">Enviar pedido</button>
+  </div>
+  <p class="nota">Los precios y la disponibilidad se confirman al enviar el pedido.</p>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/cliente.js') }}"></script>{% endblock %}

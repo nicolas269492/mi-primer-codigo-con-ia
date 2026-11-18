@@ -1,0 +1,82 @@
+{#
+  Registro de ventas. Ruta: admin_ventas.ventas (/admin/ventas/).
+  Filtros de fecha y cliente (con atajos), indicadores (kpis), listado, top 10
+  de productos más vendidos y botón de exportar CSV con los mismos filtros.
+#}
+{% extends "base.html" %}
+{% block titulo %}Ventas{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_ventas.css') }}">{% endblock %}
+{% block contenido %}
+<div class="fila entre">
+  <h1>Registro de ventas</h1>
+  <a class="btn btn-sec" href="{{ url_for('admin_ventas.exportar_csv', **filtros) }}">⬇ Exportar CSV</a>
+</div>
+<p class="nota">Las ventas se registran automáticamente cuando un pedido se despacha.</p>
+
+<form class="filtros tarjeta" method="get">
+  <label>Desde <input type="date" name="desde" value="{{ filtros.desde }}"></label>
+  <label>Hasta <input type="date" name="hasta" value="{{ filtros.hasta }}"></label>
+  <label>Cliente <input type="search" name="cliente" value="{{ filtros.cliente }}" placeholder="Nombre o correo"></label>
+  <button class="btn btn-primario" type="submit">Filtrar</button>
+  <a class="btn btn-sec" href="{{ url_for('admin_ventas.ventas') }}">Limpiar</a>
+  <span class="atajos">
+    {% for clave, etiqueta in [('hoy', 'Hoy'), ('7dias', '7 días'), ('30dias', '30 días'), ('mes', 'Este mes')] %}
+      <a class="btn btn-sec btn-sm" href="{{ url_for('admin_ventas.ventas', desde=atajos[clave][0], hasta=atajos[clave][1], cliente=filtros.cliente or None) }}">{{ etiqueta }}</a>
+    {% endfor %}
+  </span>
+</form>
+
+<div class="kpis">
+  <div class="kpi"><div class="kpi-valor">{{ kpis.num_ventas }}</div><div class="kpi-etiqueta">Ventas</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ kpis.total|moneda }}</div><div class="kpi-etiqueta">Total vendido</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ kpis.ticket|moneda }}</div><div class="kpi-etiqueta">Ticket promedio</div></div>
+  <div class="kpi"><div class="kpi-valor">{{ kpis.unidades }}</div><div class="kpi-etiqueta">Unidades vendidas</div></div>
+</div>
+
+<div class="ventas-layout">
+  <section class="tarjeta">
+    <h2>Ventas ({{ ventas|length }})</h2>
+    {% if ventas %}
+    <div class="tabla-scroll">
+      <table class="tabla">
+        <thead><tr><th>#</th><th>Fecha</th><th>Cliente</th><th>Pedido</th><th>Registró</th><th class="num">Unid.</th><th class="num">Total</th><th></th></tr></thead>
+        <tbody>
+        {% for v in ventas %}
+          <tr>
+            <td>{{ v.id }}</td>
+            <td>{{ v.fecha.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>{{ v.cliente_nombre }}<br><small class="nota">{{ v.cliente_email }}</small></td>
+            <td>{% if v.pedido_id %}<a href="{{ url_for('admin_pedidos.detalle', pedido_id=v.pedido_id) }}">#{{ v.pedido_id }}</a>{% else %}<span class="nota">—</span>{% endif %}</td>
+            <td>{{ v.usuario_nombre or '—' }}</td>
+            <td class="num">{{ v.unidades }}</td>
+            <td class="num">{{ v.total|moneda }}</td>
+            <td><a class="btn btn-sec btn-sm" href="{{ url_for('admin_ventas.detalle', venta_id=v.id) }}">Ver</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="vacio">No hay ventas para los filtros seleccionados.</p>
+    {% endif %}
+  </section>
+
+  <section class="tarjeta">
+    <h2>Más vendidos del período</h2>
+    {% if top %}
+    {% set max_u = top[0].unidades or 1 %}
+    <ol class="top-productos">
+      {% for p in top %}
+      <li>
+        <div class="fila entre"><strong>{{ p.nombre }}</strong><span class="num">{{ p.unidades }} u.</span></div>
+        <div class="barra-top"><span style="width: {{ (p.unidades * 100 / max_u)|round(0) }}%"></span></div>
+        <small class="nota">{{ p.codigo }} · {{ p.importe|moneda }} · {{ p.num_ventas }} venta{{ 's' if p.num_ventas != 1 }}</small>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+      <p class="vacio">Sin datos.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

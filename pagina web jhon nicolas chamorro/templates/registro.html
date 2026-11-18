@@ -1,0 +1,19 @@
+{#
+  Registro público de clientes nuevos. Ruta: auth.registro (/registro).
+  Siempre crea usuarios con rol 'cliente'.
+#}
+{% extends "base.html" %}
+{% block titulo %}Crear cuenta{% endblock %}
+{% block contenido %}
+<div class="tarjeta tarjeta-estrecha">
+  <h1>Crear cuenta de cliente</h1>
+  <form method="post" class="formulario">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Nombre <input name="nombre" required value="{{ request.form.nombre }}"></label>
+    <label>Correo <input type="email" name="email" required value="{{ request.form.email }}"></label>
+    <label>Contraseña <input type="password" name="password" minlength="6" required></label>
+    <button class="btn btn-primario" type="submit">Registrarme</button>
+  </form>
+  <p class="nota">¿Ya tienes cuenta? <a href="{{ url_for('auth.login') }}">Inicia sesión</a></p>
+</div>
+{% endblock %}

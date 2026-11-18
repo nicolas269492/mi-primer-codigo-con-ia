@@ -1,0 +1,77 @@
+{#
+  Detalle de un pedido para el admin. Ruta: admin_pedidos.detalle (/admin/pedidos/<id>).
+  Muestra líneas, venta asociada y solo los botones de cambio de estado permitidos (transiciones).
+#}
+{% extends "base.html" %}
+{% block titulo %}Pedido #{{ pedido.id }}{% endblock %}
+{% block contenido %}
+{% set abierto = pedido.estado in ('pendiente', 'preparacion') %}
+<p><a href="{{ url_for('admin_pedidos.pedidos') }}">← Volver a pedidos</a></p>
+<div class="fila entre">
+  <h1>Pedido #{{ pedido.id }} <span class="badge estado-{{ pedido.estado }}">{{ ETIQUETAS_ESTADO[pedido.estado] }}</span></h1>
+  <div class="fila">
+    {% if abierto %}
+      <a class="btn btn-sec" href="{{ url_for('admin_pedidos.editar', pedido_id=pedido.id) }}">Editar</a>
+    {% endif %}
+    {% if pedido.estado != 'despachado' %}
+    <form method="post" action="{{ url_for('admin_pedidos.eliminar', pedido_id=pedido.id) }}" data-confirmar="¿Eliminar el pedido #{{ pedido.id }}? Esta acción no se puede deshacer.">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-peligro" type="submit">Eliminar</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="tarjeta">
+    <h2>Datos</h2>
+    <p><strong>Cliente:</strong> {{ pedido.cliente_nombre }} <span class="nota">({{ pedido.cliente_email }})</span></p>
+    <p><strong>Creado:</strong> {{ pedido.creado_en.strftime('%Y-%m-%d %H:%M') }}
+       · <strong>Actualizado:</strong> {{ pedido.actualizado_en.strftime('%Y-%m-%d %H:%M') }}</p>
+    <p><strong>Atendido por:</strong> {{ pedido.atendido_por_nombre or '—' }}</p>
+    <p><strong>Notas:</strong> {{ pedido.notas or '—' }}</p>
+    {% if venta %}
+      <p class="alerta alerta-ok">Venta generada: <a href="{{ url_for('admin_ventas.detalle', venta_id=venta.id) }}">#{{ venta.id }}</a>
+        ({{ venta.fecha.strftime('%Y-%m-%d %H:%M') }}, {{ venta.total|moneda }})</p>
+    {% endif %}
+  </div>
+  <div class="tarjeta">
+    <h2>Cambiar estado</h2>
+    {% if transiciones %}
+      <div class="fila">
+      {% for e in transiciones %}
+        <form method="post" action="{{ url_for('admin_pedidos.cambiar_estado', pedido_id=pedido.id) }}"
+              {% if e in ('despachado', 'cancelado') %}data-confirmar="¿{{ ACCION_ESTADO[e][0] }} para el pedido #{{ pedido.id }}?"{% endif %}>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="estado" value="{{ e }}">
+          <button class="btn {{ ACCION_ESTADO[e][1] }}" type="submit">{{ ACCION_ESTADO[e][0] }}</button>
+        </form>
+      {% endfor %}
+      </div>
+      {% if 'despachado' in transiciones %}<p class="nota">Al despachar se descuenta el stock y se registra la venta.</p>{% endif %}
+    {% else %}
+      <p class="nota">Este pedido está {{ ETIQUETAS_ESTADO[pedido.estado]|lower }}; no admite más cambios de estado.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="tarjeta">
+  <h2>Productos</h2>
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>Código</th><th>Producto</th><th class="num">Cantidad</th><th class="num">Precio</th><th class="num">Subtotal</th>{% if abierto %}<th class="num">Stock actual</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for it in pedido['items'] %}
+        <tr><td>{{ it.codigo }}</td><td>{{ it.nombre }}</td><td class="num">{{ it.cantidad }}</td>
+          <td class="num">{{ it.precio_unitario|moneda }}</td><td class="num">{{ it.subtotal|moneda }}</td>
+          {% if abierto %}
+          <td class="num">{% if it.stock < it.cantidad %}<span class="badge badge-peligro">{{ it.stock }}</span>{% else %}{{ it.stock }}{% endif %}</td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><th colspan="4" class="num">Total</th><th class="num">{{ pedido.total|moneda }}</th>{% if abierto %}<th></th>{% endif %}</tr></tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

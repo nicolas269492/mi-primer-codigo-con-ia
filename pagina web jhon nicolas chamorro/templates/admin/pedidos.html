@@ -1,0 +1,74 @@
+{#
+  Listado de pedidos para el admin. Ruta: admin_pedidos.pedidos (/admin/pedidos/).
+  Filtros por estado (con contador) y por cliente.
+#}
+{% extends "base.html" %}
+{% block titulo %}Pedidos{% endblock %}
+{% block contenido %}
+<div class="fila entre">
+  <h1>Pedidos</h1>
+  <a class="btn btn-primario" href="{{ url_for('admin_pedidos.nuevo') }}">+ Nuevo pedido</a>
+</div>
+
+<div class="kpis">
+  {% for e in estados %}
+  <a class="kpi" style="text-decoration:none;color:inherit" href="{{ url_for('admin_pedidos.pedidos', estado=e, cliente_id=cliente_id) }}">
+    <div class="kpi-valor">{{ conteo[e] }}</div>
+    <div class="kpi-etiqueta"><span class="badge estado-{{ e }}">{{ ETIQUETAS_ESTADO[e] }}</span></div>
+  </a>
+  {% endfor %}
+</div>
+
+<form class="filtros tarjeta" method="get">
+  <label>Estado
+    <select name="estado">
+      <option value="">Todos</option>
+      {% for e in estados %}<option value="{{ e }}" {{ 'selected' if e == estado }}>{{ ETIQUETAS_ESTADO[e] }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Cliente
+    <select name="cliente_id">
+      <option value="">Todos</option>
+      {% for c in clientes %}<option value="{{ c.id }}" {{ 'selected' if c.id == cliente_id }}>{{ c.nombre }}{% if not c.activo %} (inactivo){% endif %}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn btn-primario" type="submit">Filtrar</button>
+  <a class="btn btn-sec" href="{{ url_for('admin_pedidos.pedidos') }}">Limpiar</a>
+</form>
+
+<div class="tarjeta">
+  {% if pedidos %}
+  <div class="tabla-scroll">
+    <table class="tabla">
+      <thead><tr><th>#</th><th>Fecha</th><th>Cliente</th><th>Estado</th><th class="num">Unid.</th><th class="num">Total</th><th>Acciones</th></tr></thead>
+      <tbody>
+      {% for p in pedidos %}
+        <tr>
+          <td><a href="{{ url_for('admin_pedidos.detalle', pedido_id=p.id) }}">#{{ p.id }}</a></td>
+          <td>{{ p.creado_en.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>{{ p.cliente_nombre }}</td>
+          <td><span class="badge estado-{{ p.estado }}">{{ ETIQUETAS_ESTADO[p.estado] }}</span></td>
+          <td class="num">{{ p.unidades }}</td>
+          <td class="num">{{ p.total|moneda }}</td>
+          <td class="fila">
+            <a class="btn btn-sec btn-sm" href="{{ url_for('admin_pedidos.detalle', pedido_id=p.id) }}">Ver</a>
+            {% if p.estado in ('pendiente', 'preparacion') %}
+              <a class="btn btn-sec btn-sm" href="{{ url_for('admin_pedidos.editar', pedido_id=p.id) }}">Editar</a>
+            {% endif %}
+            {% if p.estado != 'despachado' %}
+            <form method="post" action="{{ url_for('admin_pedidos.eliminar', pedido_id=p.id) }}" data-confirmar="¿Eliminar el pedido #{{ p.id }}? Esta acción no se puede deshacer.">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-peligro btn-sm" type="submit">Eliminar</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <p class="vacio">No hay pedidos con esos filtros.</p>
+  {% endif %}
+</div>
+{% endblock %}

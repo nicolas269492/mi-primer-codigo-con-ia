@@ -1,0 +1,105 @@
+{#
+  Panel del administrador. Ruta: admin_inv.dashboard (/admin/).
+  Muestra los indicadores (kpis), productos bajo stock mínimo (bajo) y los últimos movimientos (ultimos).
+#}
+{% extends "base.html" %}
+{% block titulo %}Panel{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_inventario.css') }}">{% endblock %}
+{% block contenido %}
+<div class="fila entre">
+  <h1>Panel de inventario</h1>
+  <div class="fila">
+    <a class="btn btn-primario btn-sm" href="{{ url_for('admin_inv.producto_nuevo') }}">+ Nuevo producto</a>
+    <a class="btn btn-sec btn-sm" href="{{ url_for('admin_inv.movimientos') }}">Registrar entrada/salida</a>
+  </div>
+</div>
+
+<div class="kpis">
+  <a class="kpi kpi-enlace" href="{{ url_for('admin_inv.productos') }}">
+    <div class="kpi-valor">{{ kpis.activos }}</div>
+    <div class="kpi-etiqueta">Productos activos</div>
+  </a>
+  <div class="kpi">
+    <div class="kpi-valor">{{ "{:,}".format(kpis.unidades).replace(",", ".") }}</div>
+    <div class="kpi-etiqueta">Unidades en stock</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-valor">{{ kpis.valor|moneda }}</div>
+    <div class="kpi-etiqueta">Valor del inventario</div>
+  </div>
+  <div class="kpi {% if kpis.bajo_minimo %}kpi-alerta{% endif %}">
+    <div class="kpi-valor">{{ kpis.bajo_minimo }}</div>
+    <div class="kpi-etiqueta">Bajo stock mínimo</div>
+  </div>
+  <a class="kpi kpi-enlace {% if kpis.estancados %}kpi-alerta{% endif %}" href="{{ url_for('admin_inv.estancados') }}">
+    <div class="kpi-valor">{{ kpis.estancados }}</div>
+    <div class="kpi-etiqueta">Estancados (&gt; {{ dias_umbral }} días)</div>
+  </a>
+  <a class="kpi kpi-enlace" href="{{ url_for('admin_pedidos.pedidos') }}">
+    <div class="kpi-valor">{{ kpis.pendientes }}</div>
+    <div class="kpi-etiqueta">Pedidos pendientes</div>
+  </a>
+  <div class="kpi">
+    <div class="kpi-valor">{{ kpis.ventas_hoy|moneda }}</div>
+    <div class="kpi-etiqueta">Ventas de hoy ({{ kpis.n_ventas_hoy }})</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-valor">{{ kpis.ventas_mes|moneda }}</div>
+    <div class="kpi-etiqueta">Ventas del mes ({{ kpis.n_ventas_mes }})</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <section class="tarjeta">
+    <div class="fila entre">
+      <h2 class="sin-margen">Bajo stock mínimo</h2>
+      {% if total_bajo > bajo|length %}<span class="nota">Mostrando {{ bajo|length }} de {{ total_bajo }}</span>{% endif %}
+    </div>
+    {% if bajo %}
+    <div class="tabla-scroll">
+      <table class="tabla">
+        <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Mínimo</th><th></th></tr></thead>
+        <tbody>
+        {% for p in bajo %}
+          <tr>
+            <td>{{ p.nombre }}<br><small class="nota">{{ p.codigo }}</small></td>
+            <td class="num"><span class="badge {{ 'badge-peligro' if p.stock == 0 else 'badge-alerta' }}">{{ p.stock }}</span></td>
+            <td class="num">{{ p.stock_minimo }}</td>
+            <td class="num"><a class="btn btn-sec btn-sm" href="{{ url_for('admin_inv.movimientos', nuevo_producto=p.id) }}">Reponer</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="vacio">Todos los productos están por encima del mínimo.</p>
+    {% endif %}
+  </section>
+
+  <section class="tarjeta">
+    <div class="fila entre">
+      <h2 class="sin-margen">Últimos movimientos</h2>
+      <a class="nota" href="{{ url_for('admin_inv.movimientos') }}">Ver todos</a>
+    </div>
+    {% if ultimos %}
+    <div class="tabla-scroll">
+      <table class="tabla">
+        <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="num">Cant.</th></tr></thead>
+        <tbody>
+        {% for m in ultimos %}
+          <tr>
+            <td><small>{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</small></td>
+            <td>{{ m.producto }}<br><small class="nota">{{ m.motivo }}</small></td>
+            <td><span class="badge {{ 'badge-ok' if m.tipo == 'entrada' else 'badge-alerta' }}">{{ m.tipo }}</span></td>
+            <td class="num">{{ '+' if m.tipo == 'entrada' else '−' }}{{ m.cantidad }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="vacio">Aún no hay movimientos.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
